@@ -4,7 +4,7 @@ import json
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import expr
 
-from mini_pipeline.core.types import *
+from mini_pipeline.common.types import *
 
 
 def parse_pipeline(base64_encoded_json_pipeline: str) -> Pipeline:

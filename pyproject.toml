@@ -11,6 +11,8 @@ dependencies = [
     "pytest (>=8.4.1,<9.0.0)",
     "pydantic (>=2.11.7,<3.0.0)",
     "pyspark (==4.0.0)",
+    "dynaconf (>=3.2.11,<4.0.0)",
+    "fastapi (>=0.116.1,<0.117.0)",
 ]
 
 [tool.poetry]

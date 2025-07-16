@@ -1,15 +1,15 @@
 import pytest
 from pyspark.sql import SparkSession, DataFrame
 
-from mini_pipeline.core.pipeline_execution import apply_transformations
-from mini_pipeline.core.types import *
+from mini_pipeline.service.executor.pipeline_execution import apply_transformations
+from mini_pipeline.common.types import *
 
 
 @pytest.fixture(scope="module")
 def spark():
     spark = SparkSession.builder \
         .appName("TestJob") \
-        .master("spark://localhost:7077") \
+        .master("local[*]") \
         .getOrCreate()
     yield spark
     spark.stop()

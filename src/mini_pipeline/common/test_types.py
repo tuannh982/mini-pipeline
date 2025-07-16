@@ -1,6 +1,6 @@
 import json
 
-from mini_pipeline.core.types import *
+from mini_pipeline.common.types import *
 
 
 def test_pipeline_codec():

@@ -1,0 +1,2 @@
+spark:
+  masterUrl: spark://localhost:7077
