@@ -6,10 +6,11 @@ authors = [
     {name = "Your Name",email = "you@example.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13,<4.0"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "pytest (>=8.4.1,<9.0.0)",
-    "pydantic (>=2.11.7,<3.0.0)"
+    "pydantic (>=2.11.7,<3.0.0)",
+    "pyspark (==4.0.0)",
 ]
 
 [tool.poetry]

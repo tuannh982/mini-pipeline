@@ -3,9 +3,18 @@ mini-pipeline
 
 ## Prerequisites
 
+- Python 3.12
 - Poetry
 
-## Running test
+## Quickstarts
+
+### Install dependencies
+
+```shell
+poetry install
+```
+
+### Running test
 
 ```shell
 poetry run pytest
