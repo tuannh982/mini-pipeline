@@ -3,8 +3,6 @@ import uuid
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import expr
 
-from mini_pipeline.domain.core.types import *
-
 
 def apply_transformation(t: TransformationType, dataframes: dict[str, DataFrame]) -> DataFrame:
     match t:

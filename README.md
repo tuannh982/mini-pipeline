@@ -5,22 +5,23 @@ mini-pipeline
 
 - Python 3.12
 - Poetry
+- Docker
 
 ## Quickstarts
 
-### Install dependencies
+Starting infrastructures
+
+```shell
+docker compose -f docker/docker-compose.yaml
+```
+Running API server
 
 ```shell
 poetry install
+poetry run python src/mini_pipeline/main.py
 ```
 
-### Running server
-
-```shell
- poetry run python src/mini_pipeline/main.py
-```
-
-### Running test
+### Running tests
 
 ```shell
 poetry run pytest

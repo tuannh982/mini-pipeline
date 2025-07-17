@@ -1,4 +1,4 @@
-from mini_pipeline.domain.core.types import *
+from mini_pipeline.core.types import *
 
 
 class Dataset(BaseModel):
