@@ -1,8 +1,8 @@
 import pytest
 from pyspark.sql import SparkSession, DataFrame
 
-from mini_pipeline.service.executor.pipeline_execution import apply_transformations
-from mini_pipeline.common.types import *
+from mini_pipeline.service.pipeline_executor.spark_executor import apply_transformations
+from mini_pipeline.domain.core.types import *
 
 
 @pytest.fixture(scope="module")
@@ -21,7 +21,7 @@ def test_apply_transformation(spark):
     df = spark.createDataFrame(data, ["name", "age"])
     pipeline = Pipeline(
         sources=[],
-        sink=Sink(input="", format="", path="", options={}),
+        sinks=[],
         transformations=[
             Filter(
                 operation="Filter",

@@ -14,6 +14,12 @@ mini-pipeline
 poetry install
 ```
 
+### Running server
+
+```shell
+ poetry run python src/mini_pipeline/main.py
+```
+
 ### Running test
 
 ```shell

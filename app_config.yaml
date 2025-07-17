@@ -1,2 +1,8 @@
+port: 8000
 spark:
   masterUrl: spark://localhost:7077
+db:
+  driver: postgres
+  user: postgres
+  password: postgres
+  name: postgres

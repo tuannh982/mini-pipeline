@@ -1,6 +1,6 @@
 import json
 
-from mini_pipeline.common.types import *
+from mini_pipeline.domain.core.types import *
 
 
 def test_pipeline_codec():
@@ -14,31 +14,36 @@ def test_pipeline_codec():
           "options": {}
         }
       ],
-      "sink": {
-        "input": "final_output",
-        "format": "parquet",
-        "path": "/data/output.parquet",
-        "options": {}
-      },
+      "sinks": [ 
+        {
+            "input": "final_output",
+            "format": "parquet",
+            "path": "/data/output.parquet",
+            "options": {}
+          }
+      ],
       "transformations": [
         {
           "operation": "Select",
           "output": "selected_data",
           "input": "input_data",
-          "columns": ["id", "name", "age"]
+          "columns": ["id", "name", "age"],
+          "enabled": false
         },
         {
           "operation": "Filter",
           "output": "filtered_data",
           "input": "selected_data",
-          "condition": "age > 21"
+          "condition": "age > 21",
+          "enabled": true
         },
         {
           "operation": "Map",
           "output": "mapped_data",
           "input": "filtered_data",
           "new_column": "is_adult",
-          "expression": "age >= 18"
+          "expression": "age >= 18",
+          "enabled": true
         },
         {
           "operation": "Reduce",
@@ -48,7 +53,8 @@ def test_pipeline_codec():
           "aggregation": {
             "count": "count(*)",
             "avg_age": "avg(age)"
-          }
+          },
+          "enabled": true
         },
         {
           "operation": "Join",
@@ -76,34 +82,33 @@ def test_pipeline_codec():
                 options={}
             )
         ],
-        sink=Sink(
-            input="final_output",
-            format="parquet",
-            path="/data/output.parquet",
-            options={}
-        ),
+        sinks=[
+            Sink(
+                input="final_output",
+                format="parquet",
+                path="/data/output.parquet",
+                options={}
+            ),
+        ],
         transformations=[
             Select(
-                operation="Select",
                 output="selected_data",
                 input="input_data",
-                columns=["id", "name", "age"]
+                columns=["id", "name", "age"],
+                enabled=False,
             ),
             Filter(
-                operation="Filter",
                 output="filtered_data",
                 input="selected_data",
                 condition="age > 21"
             ),
             Map(
-                operation="Map",
                 output="mapped_data",
                 input="filtered_data",
                 new_column="is_adult",
                 expression="age >= 18"
             ),
             Reduce(
-                operation="Reduce",
                 output="aggregated_data",
                 input="mapped_data",
                 group_by=["is_adult"],
@@ -113,7 +118,6 @@ def test_pipeline_codec():
                 }
             ),
             Join(
-                operation="Join",
                 output="joined_data",
                 left="aggregated_data",
                 right="some_other_data",
@@ -121,7 +125,6 @@ def test_pipeline_codec():
                 how="inner"
             ),
             Merge(
-                operation="Merge",
                 output="final_output",
                 left="joined_data",
                 right="extra_data"

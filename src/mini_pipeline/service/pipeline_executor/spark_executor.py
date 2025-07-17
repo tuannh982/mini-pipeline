@@ -1,32 +1,32 @@
-import base64
-import json
+import uuid
 
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import expr
 
-from mini_pipeline.common.types import *
-
-
-def parse_pipeline(base64_encoded_json_pipeline: str) -> Pipeline:
-    json_str = base64.b64decode(base64_encoded_json_pipeline)
-    parsed = json.loads(json_str)
-    pipeline = Pipeline(**parsed)
-    return pipeline
+from mini_pipeline.domain.core.types import *
 
 
 def apply_transformation(t: TransformationType, dataframes: dict[str, DataFrame]) -> DataFrame:
     match t:
-        case Select(input=inp, columns=cols):
+        case Select(input=inp, columns=cols, enabled=enabled):
             df = dataframes[inp]
+            if not enabled:
+                return df
             return df.select(*cols)
-        case Filter(input=inp, condition=cond):
+        case Filter(input=inp, condition=cond, enabled=enabled):
             df = dataframes[inp]
+            if not enabled:
+                return df
             return df.filter(cond)
-        case Map(input=inp, new_column=col, expression=expression):
+        case Map(input=inp, new_column=col, expression=expression, enabled=enabled):
             df = dataframes[inp]
+            if not enabled:
+                return df
             return df.withColumn(col, expr(expression))
-        case Reduce(input=inp, group_by=group, aggregation=agg):
+        case Reduce(input=inp, group_by=group, aggregation=agg, enabled=enabled):
             df = dataframes[inp]
+            if not enabled:
+                return df
             agg_f = [expr(v).alias(k) for k, v in agg.items()]
             return df.groupBy(*group).agg(*agg_f)
         case Join(left=l, right=r, on=on_key, how=how):
@@ -47,8 +47,7 @@ def apply_transformations(pipeline: Pipeline, dataframes: dict[str, DataFrame]) 
         dataframes[t.output] = df
 
 
-def execute_pipeline_with_session(spark: SparkSession, base64_encoded_json_pipeline: str) -> None:
-    pipeline = parse_pipeline(base64_encoded_json_pipeline)
+def execute_pipeline_with_session(spark: SparkSession, pipeline: Pipeline) -> None:
     dataframes: dict[str, DataFrame] = {}
     # source
     for source in pipeline.sources:
@@ -57,18 +56,23 @@ def execute_pipeline_with_session(spark: SparkSession, base64_encoded_json_pipel
     # transform
     apply_transformations(pipeline, dataframes)
     # sink
-    sink = pipeline.sink
-    sink_df = dataframes[pipeline.sink.input]
-    sink_df.write.mode("overwrite").format(sink.format).options(**sink.options).save(sink.path)
+    for sink in pipeline.sinks:
+        df = dataframes[pipeline.sink.input]
+        df.write.mode("overwrite").format(sink.format).options(**sink.options).save(sink.path)
 
 
-def execute_pipeline(spark_master: str, job_id: str, base64_encoded_json_pipeline: str) -> None:
+def execute_pipeline(spark_master: str | None, job_id: str | None, pipeline: Pipeline) -> None:
     spark: SparkSession | None = None
+    if spark_master is None:
+        spark_master = "local[*]"
+    if job_id is None:
+        job_id = str(uuid.uuid4())
     try:
         spark = (SparkSession.builder
                  .appName(job_id)
                  .master(spark_master)
                  .getOrCreate())
-        execute_pipeline_with_session(spark, base64_encoded_json_pipeline)
+        execute_pipeline_with_session(spark, pipeline)
     finally:
-        spark.stop()
+        if spark is not None:
+            spark.stop()
