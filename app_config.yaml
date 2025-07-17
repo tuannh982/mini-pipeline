@@ -12,3 +12,8 @@ db:
     database: postgres
     user: postgres
     password: postgres
+s3:
+  endpoint: localhost:9000
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucket: data

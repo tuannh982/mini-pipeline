@@ -1,0 +1,39 @@
+{
+  "name": "SamplePipelineTemplate",
+  "description": "This is a test pipeline template",
+  "sources": [
+    {
+      "name": "input_data"
+    }
+  ],
+  "sinks": [
+    {
+      "name": "output_data"
+    }
+  ],
+  "transformations": [
+    {
+      "operation": "Map",
+      "input": "input_data",
+      "new_column": "name",
+      "expression": "first_name + ' ' + last_name",
+      "output": "with_full_name",
+      "enabled": true
+    },
+    {
+      "operation": "Map",
+      "input": "with_full_name",
+      "new_column": "name_upper",
+      "expression": "upper(name)",
+      "output": "with_upper_name",
+      "enabled": true
+    },
+    {
+      "operation": "Filter",
+      "input": "with_upper_name",
+      "condition": "age > 18",
+      "output": "output_data",
+      "enabled": true
+    }
+  ]
+}

@@ -29,3 +29,9 @@ class PipelineTemplateResponse(PipelineTemplateSchema):
 
     class Config:
         from_attributes = True
+
+
+class ExecutePipelineRequest(BaseModel):
+    template_id: int
+    source_files: List[str]
+    sink_files: List[str]
