@@ -1,0 +1,15 @@
+{
+    "template_id": 1,
+    "source_files": [
+        {
+            "path": "data.csv",
+            "dataset": "input_data"
+        }
+    ],
+    "sink_files": [
+        {
+            "path": "output.csv",
+            "dataset": "output_data"
+        }
+    ]
+}

@@ -1,7 +1,8 @@
 import pytest
 from pyspark.sql import SparkSession, DataFrame
 
-from mini_pipeline.service.pipeline_executor.spark_executor import apply_transformations
+from mini_pipeline.core.types import *
+from mini_pipeline.pipeline_executor.spark_executor import apply_transformations
 
 
 @pytest.fixture(scope="module")

@@ -87,4 +87,4 @@ class Pipeline(BaseModel):
         return pipeline
 
     def to_json(self) -> str:
-        return self.model_dump()
+        return self.model_dump_json()
