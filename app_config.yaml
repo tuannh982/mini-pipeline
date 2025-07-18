@@ -3,7 +3,7 @@ logging:
   format: "[%(asctime)s] %(levelname)s - %(name)s - %(message)s"
 port: 8000
 spark:
-  masterUrl: spark://localhost:7077
+  masterUrl: "local[*]"
 db:
   main:
     driver: postgres
@@ -12,8 +12,11 @@ db:
     database: postgres
     user: postgres
     password: postgres
-s3:
-  endpoint: http://localhost:9000
-  accessKey: minioadmin
-  secretKey: minioadmin
-  bucket: data
+storage:
+  local:
+    path: uploads
+  s3:
+    endpoint: http://localhost:9000
+    accessKey: minioadmin
+    secretKey: minioadmin
+    bucket: data

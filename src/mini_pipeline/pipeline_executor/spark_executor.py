@@ -1,4 +1,7 @@
+import os
+import shutil
 import uuid
+from glob import glob
 
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import expr
@@ -57,8 +60,14 @@ def execute_pipeline_with_session(spark: SparkSession, pipeline: Pipeline) -> No
     apply_transformations(pipeline, dataframes)
     # sink
     for sink in pipeline.sinks:
-        df = dataframes[pipeline.sink.input]
-        df.write.mode("overwrite").format(sink.format).options(**sink.options).save(sink.path)
+        df = dataframes[sink.input]
+        temp_sink_path = f"{sink.path}_temp"
+        df.coalesce(1).write.mode("overwrite").format(sink.format).options(**sink.options).save(temp_sink_path)
+        # merge file
+        part_file = glob(os.path.join(temp_sink_path, f"part-*.{sink.format}"))[0]
+        shutil.move(part_file, sink.path)
+        shutil.rmtree(temp_sink_path)
+
 
 
 def execute_pipeline(spark_master: str | None, job_id: str | None, pipeline: Pipeline) -> None:

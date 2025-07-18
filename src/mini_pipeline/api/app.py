@@ -1,21 +1,25 @@
 import io
 import json
-from typing import List, Optional
+import os
+import uuid
+from typing import List, Optional, Dict
 
+import pandas as pd
 from dynaconf import LazySettings
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
+from pandas import DataFrame
+from pyspark.sql import SparkSession
 from sqlalchemy.orm import Session
 
 from mini_pipeline.api.schemas import PipelineTemplateResponse, PipelineTemplateSchema, ExecutePipelineRequest
 from mini_pipeline.common.conversion import csv_binary_to_json_binary
 from mini_pipeline.common.file import extract_file_info
 from mini_pipeline.common.logging import logger
-from mini_pipeline.common.s3 import s3_client, create_bucket_if_not_exists
 from mini_pipeline.core.types import Source, Sink
 from mini_pipeline.db.tables import PipelineTemplateDB
 from mini_pipeline.db.utils import Sessions
-from mini_pipeline.pipeline_executor.spark_executor import execute_pipeline
+from mini_pipeline.pipeline_executor.spark_executor import execute_pipeline, execute_pipeline_with_session
 
 
 def main_db():
@@ -29,12 +33,9 @@ def main_db():
 def create_app(config: LazySettings) -> FastAPI:
     app = FastAPI()
     # config
-    s3_config = config.get("s3")
-    if s3_config is None:
-        raise AttributeError("'s3' is not defined")
+    storage_config = config.get("storage")
+    local_storage_config = storage_config.get("local")
     spark_config = config.get("spark")
-    if spark_config is None:
-        raise AttributeError("'spark' is not defined")
 
     # health APIs
     @app.get("/health", response_model=str)
@@ -74,26 +75,27 @@ def create_app(config: LazySettings) -> FastAPI:
     @app.post("/datasets/upload")
     async def upload_file(file: UploadFile = File(...)):
         contents = await file.read()
-        bucket: str = s3_config.get("bucket")
-        s3 = s3_client(config.s3)
-        create_bucket_if_not_exists(s3, bucket)
-        s3.put_object(Bucket=bucket, Key=file.filename, Body=contents)
+        local_storage_path = local_storage_config.get("path")
+        file_location = f"{local_storage_path}/" + file.filename
+        with open(file_location, "wb") as f:
+            f.write(contents)
         return {"filename": file.filename}
 
     @app.get("/datasets/download/{filename}")
     async def download_file(filename: str, mode: Optional[str] = None):
-        bucket: str = s3_config.get("bucket")
-        s3 = s3_client(config.s3)
-        create_bucket_if_not_exists(s3, bucket)
-        obj = s3.get_object(Bucket=bucket, Key=filename)
-        obj_body = obj["Body"]
-        match mode:
-            case "json":
-                json_bytes: bytes = csv_binary_to_json_binary(obj_body.read())
-                json_obj = json.loads(json_bytes.decode('utf-8'))
-                return JSONResponse(json_obj)
-            case _:
-                return StreamingResponse(obj_body, media_type='application/octet-stream')
+        local_storage_path = local_storage_config.get("path")
+        file_location = os.path.join(local_storage_path, filename)
+        if not os.path.exists(file_location):
+            raise HTTPException(status_code=404, detail="File not found")
+        if mode == "json":
+            with open(file_location, "rb") as f:
+                csv_bytes = f.read()
+            json_bytes = csv_binary_to_json_binary(csv_bytes)
+            json_obj = json.loads(json_bytes.decode('utf-8'))
+            return JSONResponse(json_obj)
+        else:
+            file_stream = open(file_location, mode="rb")
+            return StreamingResponse(file_stream, media_type="application/octet-stream")
 
     # Execution APIs
     @app.post("/execute-pipeline")
@@ -103,7 +105,9 @@ def create_app(config: LazySettings) -> FastAPI:
         if not db_template:
             logger.warning(f"Template ID {request.template_id} not found.")
             raise HTTPException(status_code=404, detail="Template not found")
+        local_storage_path = local_storage_config.get("path")
         template = PipelineTemplateSchema.from_json(db_template.json_definition).to_pipeline_template()
+        spark_master = spark_config.get("masterUrl")
         sources: List[Source] = []
         sinks: List[Sink] = []
         for source_file in request.source_files:
@@ -112,8 +116,11 @@ def create_app(config: LazySettings) -> FastAPI:
             sources.append(Source(
                 name=source_file.dataset,
                 format=file_info.format,
-                path=path,
-                options={},
+                path=f"{local_storage_path}/{path}",
+                options={
+                    "header": "true",
+                    "inferSchema": "true",
+                },
             ))
         for sink_file in request.sink_files:
             path = sink_file.path
@@ -121,14 +128,14 @@ def create_app(config: LazySettings) -> FastAPI:
             sinks.append(Sink(
                 input=sink_file.dataset,
                 format=file_info.format,
-                path=path,
-                options={},
+                path=f"{local_storage_path}/{path}",
+                options={
+                    "header": "true",
+                    "inferSchema": "true",
+                },
             ))
         pipeline = template.to_pipeline(sources=sources, sinks=sinks)
-        print(pipeline.to_json())
-        raise HTTPException(status_code=400, detail="ggwp")
-        # spark_master = spark_config.get("masterUrl")
-        # execute_pipeline(spark_master=spark_master, job_id=None, pipeline=db_template)
-        # TODO
+        execute_pipeline(spark_master, None, pipeline)
+        return "ok"
 
     return app
