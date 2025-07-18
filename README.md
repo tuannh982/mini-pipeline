@@ -14,6 +14,7 @@ Starting infrastructures
 ```shell
 docker compose -f docker/docker-compose.yaml
 ```
+
 Running API server
 
 ```shell
@@ -26,3 +27,8 @@ poetry run python src/mini_pipeline/main.py
 ```shell
 poetry run pytest
 ```
+
+## To be improved
+
+- change local storage to s3
+- run async transformation job
